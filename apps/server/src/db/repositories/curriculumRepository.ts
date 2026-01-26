@@ -55,6 +55,12 @@ export interface CurriculumConcept {
   topic_id: string;
   name: string;
   description: string | null;
+  content: string | null;
+  runnable_examples: Array<{
+    title: string;
+    code: string;
+    expected_output?: string;
+  }>;
   examples: string[];
   keywords: string[];
   display_order: number;

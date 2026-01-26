@@ -4,6 +4,12 @@ export interface Concept {
   id: string;
   name: string;
   description: string;
+  content: string | null;
+  runnable_examples: Array<{
+    title: string;
+    code: string;
+    expected_output?: string;
+  }>;
   examples: string[];
   keywords: string[];
 }

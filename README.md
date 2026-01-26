@@ -78,7 +78,7 @@ npx tsx ../../scripts/seed-production.ts
 ```
 
 초기 계정:
-- 관리자: admin@codebuddy.io / admin1234!
+- 관리자: admin@codebuddy.local / admin1234
 - 강사: instructor1@codebuddy.io / instructor123!
 
 

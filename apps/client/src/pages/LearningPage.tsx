@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurriculumContext } from '../contexts/CurriculumContext';
 import { useProgress } from '../hooks/useProgress';
@@ -30,6 +32,7 @@ export default function LearningPage() {
   const [isPracticeLoading, setIsPracticeLoading] = useState(false);
   const [isExamLoading, setIsExamLoading] = useState(false);
   const [editorCode, setEditorCode] = useState<string>('');  // 코드 에디터 상태
+  const [conceptEditorCode, setConceptEditorCode] = useState<string>('// 예제 코드를 클릭하면 여기에 로드됩니다\n// 코드를 수정하고 실행해보세요!\n');  // 개념 학습 탭 코드 에디터
 
   // Progress tracking
   const { startTopic, recordPractice, completeTopic } = useProgress();
@@ -249,63 +252,169 @@ export default function LearningPage() {
           <>
             {/* Concept Tab */}
             {activeTab === 'concept' && currentTopic && (
-              <div className="h-full overflow-auto p-6">
-                <div className="max-w-4xl mx-auto space-y-6">
-                  {currentTopic.concepts.map((concept) => (
-                    <div key={concept.id} className="bg-white border border-gray-200 rounded-lg p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{concept.name}</h3>
-                      <p className="text-gray-600 mb-4">{concept.description}</p>
+              <div className="h-full flex">
+                {/* 왼쪽: 개념 설명 */}
+                <div className="flex-1 overflow-auto p-6">
+                  <div className="max-w-3xl space-y-6">
+                    {currentTopic.concepts.map((concept: any) => (
+                      <div key={concept.id} className="bg-white border border-gray-200 rounded-lg p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{concept.name}</h3>
+                        <p className="text-gray-600 mb-4">{concept.description}</p>
 
-                      {/* Keywords */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {concept.keywords.map((keyword, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded"
-                          >
-                            {keyword}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Examples */}
-                      {concept.examples.length > 0 && (
-                        <div className="space-y-3">
-                          <h4 className="text-sm font-medium text-gray-700">예시 코드</h4>
-                          {concept.examples.map((example: any, idx) => (
-                            <div key={idx}>
-                              {typeof example !== 'string' && example.description && (
-                                <p className="text-sm text-gray-500 mb-1">{example.description}</p>
-                              )}
-                              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto">
-                                <code>{typeof example === 'string' ? example : example.code}</code>
-                              </pre>
-                            </div>
+                        {/* Keywords */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {concept.keywords.map((keyword: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded"
+                            >
+                              {keyword}
+                            </span>
                           ))}
                         </div>
-                      )}
-                    </div>
-                  ))}
 
-                  {/* Quick Actions */}
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      onClick={() => setActiveTab('chat')}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <span>💬</span>
-                      AI에게 질문하기
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab('practice');
-                        if (!practiceSet) generatePractice();
-                      }}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      <span>✏️</span>
-                      연습문제 풀기
-                    </button>
+                        {/* Content - Markdown 렌더링 */}
+                        {concept.content && (
+                          <div className="prose prose-slate max-w-none mb-6">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                code: ({ className, children, ...props }: any) => {
+                                  const match = /language-(\w+)/.exec(className || '');
+                                  const isInline = !match;
+                                  const codeString = String(children).replace(/\n$/, '');
+                                  return isInline ? (
+                                    <code className="bg-gray-100 text-red-600 px-1 py-0.5 rounded text-sm" {...props}>
+                                      {children}
+                                    </code>
+                                  ) : (
+                                    <div className="relative group">
+                                      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto">
+                                        <code className={className} {...props}>
+                                          {children}
+                                        </code>
+                                      </pre>
+                                      <button
+                                        onClick={() => setConceptEditorCode(codeString)}
+                                        className="absolute top-2 right-2 px-2 py-1 bg-blue-600 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-700"
+                                      >
+                                        에디터에 로드
+                                      </button>
+                                    </div>
+                                  );
+                                },
+                                pre: ({ children }) => <>{children}</>,
+                                h2: ({ children }) => <h2 className="text-lg font-semibold text-gray-800 mt-6 mb-3">{children}</h2>,
+                                h3: ({ children }) => <h3 className="text-base font-semibold text-gray-700 mt-4 mb-2">{children}</h3>,
+                                p: ({ children }) => <p className="text-gray-600 mb-3 leading-relaxed">{children}</p>,
+                                ul: ({ children }) => <ul className="list-disc list-inside text-gray-600 mb-3 space-y-1">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal list-inside text-gray-600 mb-3 space-y-1">{children}</ol>,
+                                li: ({ children }) => <li className="text-gray-600">{children}</li>,
+                                strong: ({ children }) => <strong className="font-semibold text-gray-800">{children}</strong>,
+                              }}
+                            >
+                              {concept.content}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+
+                        {/* Runnable Examples */}
+                        {concept.runnable_examples && concept.runnable_examples.length > 0 && (
+                          <div className="space-y-4 mb-6">
+                            <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                              <span className="text-green-600">▶</span> 실행 가능한 예제
+                            </h4>
+                            {concept.runnable_examples.map((example: any, idx: number) => (
+                              <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden group relative">
+                                <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-700">{example.title}</span>
+                                  <button
+                                    onClick={() => setConceptEditorCode(example.code)}
+                                    className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors flex items-center gap-1"
+                                  >
+                                    <span>▶</span> 에디터에서 실행
+                                  </button>
+                                </div>
+                                <pre className="bg-gray-900 text-gray-100 p-4 text-sm overflow-x-auto">
+                                  <code>{example.code}</code>
+                                </pre>
+                                {example.expected_output && (
+                                  <div className="bg-gray-800 px-4 py-2 border-t border-gray-700">
+                                    <span className="text-xs text-gray-400">예상 출력: </span>
+                                    <span className="text-xs text-green-400 font-mono">{example.expected_output}</span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Legacy Examples (기존 예시 코드) */}
+                        {concept.examples && concept.examples.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="text-sm font-medium text-gray-700">예시 코드</h4>
+                            {concept.examples.map((example: any, idx: number) => {
+                              const codeStr = typeof example === 'string' ? example : example.code;
+                              return (
+                                <div key={idx} className="relative group">
+                                  {typeof example !== 'string' && example.description && (
+                                    <p className="text-sm text-gray-500 mb-1">{example.description}</p>
+                                  )}
+                                  <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto">
+                                    <code>{codeStr}</code>
+                                  </pre>
+                                  <button
+                                    onClick={() => setConceptEditorCode(codeStr)}
+                                    className="absolute top-2 right-2 px-2 py-1 bg-blue-600 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-700"
+                                  >
+                                    에디터에 로드
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-4 pt-4 pb-6">
+                      <button
+                        onClick={() => setActiveTab('chat')}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <span>💬</span>
+                        AI에게 질문하기
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab('practice');
+                          if (!practiceSet) generatePractice();
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <span>✏️</span>
+                        연습문제 풀기
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 오른쪽: 코드 에디터 */}
+                <div className="w-[450px] border-l border-gray-200 flex flex-col bg-white">
+                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                    <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <span className="text-green-600">▶</span> 코드 실행기
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">예제 코드를 클릭하여 직접 실행해보세요</p>
+                  </div>
+                  <div className="flex-1">
+                    <CodeEditor
+                      fixedLanguage={selection?.language as 'javascript' | 'typescript' | 'python'}
+                      initialCode={conceptEditorCode}
+                      showLanguageSelector={false}
+                      onCodeChange={setConceptEditorCode}
+                    />
                   </div>
                 </div>
               </div>

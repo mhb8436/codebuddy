@@ -8,6 +8,12 @@ export interface Concept {
   id: string;
   name: string;
   description: string;
+  content: string | null;
+  runnable_examples: Array<{
+    title: string;
+    code: string;
+    expected_output?: string;
+  }>;
   examples: string[];
   keywords: string[];
 }
@@ -53,6 +59,8 @@ function mapDbConceptToApi(dbConcept: curriculumRepo.CurriculumConcept): Concept
     id: dbConcept.id,
     name: dbConcept.name,
     description: dbConcept.description || '',
+    content: dbConcept.content || null,
+    runnable_examples: Array.isArray(dbConcept.runnable_examples) ? dbConcept.runnable_examples : [],
     examples: Array.isArray(dbConcept.examples) ? dbConcept.examples : [],
     keywords: Array.isArray(dbConcept.keywords) ? dbConcept.keywords : [],
   };
