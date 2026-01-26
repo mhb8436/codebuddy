@@ -14,6 +14,18 @@ JavaScript, TypeScript, Python을 수준별로 학습할 수 있으며, AI 채�
 - **문제 은행**: 난이도별 연습 문제 제공
 
 
+## 데모
+
+### 로그인
+![로그인](docs/screenshots/01-login-demo.gif)
+
+### 커리큘럼 선택 및 코드 실행
+![학습 및 코드 실행](docs/screenshots/02-learning-code-execution.gif)
+
+### AI 튜터 채팅
+![AI 튜터](docs/screenshots/03-ai-tutor-chat.gif)
+
+
 ## 기술 스택
 
 | 구분 | 기술 |
